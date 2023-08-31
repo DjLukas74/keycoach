@@ -1,57 +1,18 @@
 #![windows_subsystem = "windows"]
+mod systray;
+mod gui;
 
-use notify_rust::Notification;
-use std::thread;
-use std::time::Duration;
+use gui::MyApp;
+use iced::{Sandbox, Settings, window::Position};
 
-fn main() -> Result<(), systray::Error> {
-    let mut app;
-    match systray::Application::new() {
-        Ok(w) => app = w,
-        Err(_) => panic!("Can't create window!"),
-    }
-
-    app.set_tooltip(&"KeyCoach".to_string())?;
-    app.set_icon_from_file("kc.ico")?;
-
-    app.add_menu_item("Print a thing", |_| {
-        println!("Printing a thing!");
-        Ok::<_, systray::Error>(())
-    })?;
-
-    app.add_menu_item("Add Menu Item", |window| {
-        window.add_menu_item("Interior item", |_| {
-            println!("what");
-            Ok::<_, systray::Error>(())
-        })?;
-        window.add_menu_separator()?;
-        Ok::<_, systray::Error>(())
-    })?;
-
-    app.add_menu_separator()?;
-
-    app.add_menu_item("Set Reminder", |_| {
-        thread::spawn(|| {
-            thread::sleep(Duration::from_secs(5)); // Wait for 5 seconds (adjust as needed)
-            Notification::new()
-                .appname("keyCoach")
-                .summary("Reminder")
-                .body("'Ctrl + C' copies things!")
-                .show()
-                .expect("Failed to send notification");
-        });
-        Ok::<_, systray::Error>(())
-    })?;
-
-    app.add_menu_separator()?;
-
-    app.add_menu_item("Quit", |window| {
-        window.quit();
-        Ok::<_, systray::Error>(())
-    })?;
-
-    println!("Waiting on message!");
-    app.wait_for_message()?;
-
-    Ok(())
+fn main() {
+    let _thread_join_handle = std::thread::spawn(|| {
+        systray::create_systray().unwrap();
+    });
+    let mut set: Settings<_> = Settings::default();
+    set.window.position = Position::Specific(1600, 800);
+    set.window.size = (300, 200);
+    set.window.always_on_top = true;
+    MyApp::run(set).unwrap();
+    //MyApp::run(iced::Settings::default()).unwrap();
 }
